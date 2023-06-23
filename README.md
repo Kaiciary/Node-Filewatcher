@@ -1,7 +1,7 @@
 # Node-Filewatcher
 
 Filewatcher build with Node.js
-Detect file change in a directory, move it to a new directory and exec sql query.
+Detect file change in a directory, move it to a new directory and exec sql query. <br>
 (this specific flow is used by my company).
 
 ### Prerequisites
