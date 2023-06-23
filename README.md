@@ -35,7 +35,7 @@ var dbConfig = {
 ```
 <br><br>
 — note for sqlserver <br>
-if node.js cannot connect, add this below database variable
+if node.js cannot connect to SQL Server, add this below database variable
 ```
 options: {
     instanceName: '',
