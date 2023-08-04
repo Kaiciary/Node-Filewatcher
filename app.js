@@ -1,24 +1,26 @@
 var filewatcher = require('filewatcher');
 const ora = require('ora'); //ANIMATION !!!!!
 var fs = require('fs-extra');
-var sql = require("mssql");
+var path = require('path');
+var cluster = require('cluster');
 
-var watcher = filewatcher();
+if (cluster.isMaster) {
+  cluster.fork();
+
+  cluster.on('exit', function(worker, code, signal) {
+    cluster.fork();
+  });
+}
+
+if (cluster.isWorker) {
+ 	var watcher = filewatcher();
 
 const config = {
-  sap_out_dir: 'C:\\MyFiles\\New folder (2)\\New folder',
-  db_out_dir: 'C:\\MyFiles\\New folder (2)\\aaa',
+  sap_out_dir: '',
+  db_out_dir: '',
   sap_in_dir: '',
   db_in_dir: ''
 }
-
-// config for your database
-var dbConfig = {
-  user: '',
-  password: '',
-  server: '',
-  database: ''
-};
 
 var oldPath = config.sap_out_dir;
 var newPath = config.db_out_dir;
@@ -46,29 +48,33 @@ if (fs.existsSync(config.db_out_dir)) {
 
 ora('Filewatcher Running').start();
 
-sql.connect(dbConfig, function (err) {
-  if (err) {
-    console.log(err);
-    process.exit();
-  }
-});
-
-// create Request object
-var request = new sql.Request();
-
 watcher.on('change', function (file, stat) {
-  if (fs.exists(oldPath)) {
-    fs.copy(oldPath, newPath).then(() => {
-      // query to the database and get the records
-      request.query('EXEC spReadFileXML_Cancel_GR', function (err, recordset) {
-        if (err) console.log(err)
-      });
-      // Empty SAP out dir
-      fs.emptyDir(config.sap_out_dir, err => {
-        if (err) return console.error(err)
-      })
+
+	fs.readdir(config.sap_out_dir, function (err, files) {
+    //handling error
+    if (err) {
+      return console.log('Unable to scan directory: ' + err);
+    }
+    //listing all files using forEach
+    files.forEach(function (file) {
+      try {
+	var is = fs.createReadStream(oldPath+'\\'+file);
+	var os = fs.createWriteStream(newPath+'\\'+file);
+
+	is.pipe(os);
+	is.on('end',function() {
+    		fs.unlinkSync(oldPath+'\\'+file);
+	});
+        console.log("Successfully moved the file!")
+      } catch (err) {
+        throw err
+      }
     });
-    // clear console
-    process.stdout.write('\033c');
-  }
+  });  	
 });
+}
+
+
+
+
+
